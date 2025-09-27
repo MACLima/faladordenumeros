@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e0f12">
+  <title>Falador de Números (pt-BR)</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root {
+      --bg: #0e0f12;
+      --card: #171a21;
+      --fg: #e8e8ea;
+      --sub: #a9acb4;
+      --accent: #6ee7ff;
+      --muted: #2a2f3a;
+      --ok: #2ecc71;
+      --warn: #f39c12;
+      --danger: #e74c3c;
+      --btn: #2a2f3a;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% -10%, #1c2030 0%, var(--bg) 50%);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    header { padding: 28px 20px 10px; text-align: center; }
+    header h1 { margin: 0 0 6px 0; font-size: 1.6rem; letter-spacing: .2px; }
+    header p { margin: 0; color: var(--sub); font-size: .95rem; }
+    main {
+      max-width: 920px; margin: 0 auto; padding: 16px;
+      display: grid; grid-template-columns: 1fr; gap: 16px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.0));
+      border: 1px solid var(--muted);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    }
+    .grid { display: grid; gap: 12px; }
+    @media (min-width: 720px){ .grid-2 { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+    label { display: block; font-size: .9rem; color: var(--sub); margin-bottom: 6px; }
+    input[type="number"], select, input[type="range"] {
+      width: 100%; padding: 12px 12px; background: #12151c; color: var(--fg);
+      border: 1px solid var(--muted); border-radius: 10px; outline: none;
+    }
+    input[type="range"] { height: 34px; }
+    .hint { color: var(--sub); font-size: .85rem; margin-top: 4px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    button {
+      appearance: none; border: 1px solid var(--muted); background: var(--btn); color: var(--fg);
+      padding: 11px 14px; border-radius: 10px; cursor: pointer; font-size: .95rem;
+    }
+    button.primary { border-color: #3b82f6; }
+    button.ok { border-color: var(--ok); }
+    button.warn { border-color: var(--warn); }
+    button.danger { border-color: var(--danger); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .status { display: grid; gap: 6px; grid-template-columns: 1fr; font-size: .95rem; }
+    .badge {
+      display: inline-grid; place-items: center; min-width: 54px; padding: 6px 10px;
+      background: #10131a; border: 1px solid var(--muted); border-radius: 999px;
+      color: var(--accent); font-variant-numeric: tabular-nums;
+    }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .sr-only { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
+    footer { text-align: center; color: var(--sub); padding: 10px 0 24px; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Falador de Números</h1>
+    <p>Fala em voz alta cada número de <strong>1</strong> até o máximo definido (limite: <strong>1.000.000</strong>).</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="grid grid-3">
+        <div>
+          <label for="max">Número máximo (1&ndash;1.000.000)</label>
+          <input type="number" id="max" min="1" max="1000000" step="1" value="100">
+          <div class="hint">A contagem sempre inicia em 1.</div>
+        </div>
+        <div>
+          <label for="rate">Velocidade da fala: <span id="rateVal">1.00x</span></label>
+          <input type="range" id="rate" min="0.5" max="2.0" value="1.0" step="0.05" />
+          <div class="hint">0,5x (mais lento) a 2,0x (mais rápido).</div>
+        </div>
+        <div>
+          <label for="gap">Intervalo entre números (ms)</label>
+          <input type="number" id="gap" min="0" step="50" value="250">
+          <div class="hint">Pausa entre um número e o próximo.</div>
+        </div>
+      </div>
+      <div class="grid grid-2" style="margin-top:14px;">
+        <div>
+          <label for="voice">Voz</label>
+          <select id="voice" aria-label="Selecione a voz (português)">
+            <option value="">Detectando vozes...</option>
+          </select>
+          <div class="hint">Prioriza vozes em português (pt-BR / pt-PT). Selecione outra se preferir.</div>
+        </div>
+        <div>
+          <label for="startFrom">Iniciar a partir de</label>
+          <input type="number" id="startFrom" min="1" max="1000000" step="1" value="1">
+          <div class="hint">Opcional: reinicie de um ponto específico.</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="startBtn" class="primary">▶️ Iniciar</button>
+        <button id="pauseBtn" class="warn" disabled>⏸️ Pausar</button>
+        <button id="resumeBtn" class="ok" disabled>▶️ Retomar</button>
+        <button id="stopBtn" class="danger" disabled>⏹️ Parar</button>
+        <button id="skipBtn" disabled>⏭️ Pular +1</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="status">
+        <div class="row"><span>Status:</span> <span id="statusText" class="badge">Parado</span></div>
+        <div class="row"><span>Atual:</span> <span id="currentNum" class="badge">—</span> <span class="hint" id="hintVoice"></span></div>
+      </div>
+    </section>
+  </main>
+  <footer><span>Funciona nos navegadores com suporte a <code>speechSynthesis</code>.</span></footer>
+
+  <script>
+    // PWA: registrar service worker quando disponível
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    // =========================
+    // Conversor de números (pt-BR) até 1.000.000
+    // =========================
+    function numeroPorExtensoPT(n) {
+      if (n < 0 || n > 1000000) throw new Error("Fora do intervalo suportado (0–1.000.000).");
+      const u = ["zero","um","dois","três","quatro","cinco","seis","sete","oito","nove"];
+      const e10 = ["dez","onze","doze","treze","quatorze","quinze","dezesseis","dezessete","dezoito","dezenove"];
+      const d = ["","dez","vinte","trinta","quarenta","cinquenta","sessenta","setenta","oitenta","noventa"];
+      const c = ["","cento","duzentos","trezentos","quatrocentos","quinhentos","seiscentos","setecentos","oitocentos","novecentos"];
+
+      function ate999(x){
+        if (x === 0) return "";
+        if (x === 100) return "cem";
+        let partes = [];
+        const centenas = Math.floor(x/100);
+        const restoC = x % 100;
+        if (centenas > 0) {
+          if (x === 100) return "cem";
+          partes.push(c[centenas]);
+        }
+        if (restoC > 0) {
+          if (restoC < 10) {
+            if (centenas > 0) partes.push("e");
+            partes.push(u[restoC]);
+          } else if (restoC < 20) {
+            if (centenas > 0) partes.push("e");
+            partes.push(e10[restoC - 10]);
+          } else {
+            const dezenas = Math.floor(restoC/10);
+            const unidades = restoC % 10;
+            if (centenas > 0) partes.push("e");
+            partes.push(d[dezenas]);
+            if (unidades > 0) {
+              partes.push("e");
+              partes.push(u[unidades]);
+            }
+          }
+        }
+        return partes.join(" ");
+      }
+
+      if (n === 0) return "zero";
+      if (n === 1000000) return "um milhão";
+      if (n < 1000) return ate999(n);
+
+      const milhar = Math.floor(n / 1000);
+      const resto = n % 1000;
+
+      let milStr = "";
+      if (milhar === 1) milStr = "mil";
+      else milStr = ate999(milhar) + " mil";
+
+      if (resto === 0) return milStr;
+      return milStr + " e " + ate999(resto);
+    }
+
+    // =========================
+    // TTS / Fala
+    // =========================
+    const synth = window.speechSynthesis;
+    const voiceSel = document.getElementById("voice");
+    const rateInput = document.getElementById("rate");
+    const rateVal = document.getElementById("rateVal");
+    const maxInput = document.getElementById("max");
+    const startFromInput = document.getElementById("startFrom");
+    const gapInput = document.getElementById("gap");
+
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const skipBtn = document.getElementById("skipBtn");
+
+    const statusText = document.getElementById("statusText");
+    const currentNum = document.getElementById("currentNum");
+    const hintVoice = document.getElementById("hintVoice");
+
+    let voices = [];
+    let current = 1;
+    let max = 100;
+    let cancelRequested = false;
+    let waitingNext = false;
+    let speaking = false;
+    let paused = false;
+
+    rateInput.addEventListener("input", () => {
+      rateVal.textContent = parseFloat(rateInput.value).toFixed(2) + "x";
+    });
+
+    function loadVoices() {
+      voices = synth.getVoices();
+      const prefer = (v) => {
+        const name = (v.name || "").toLowerCase();
+        const lang = (v.lang || "").toLowerCase();
+        if (lang.includes("pt-br")) return 3;
+        if (lang.includes("pt-pt")) return 2;
+        if (lang.startsWith("pt")) return 1;
+        return 0;
+      };
+      voices.sort((a,b) => prefer(b) - prefer(a));
+      voiceSel.innerHTML = "";
+      if (voices.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Sem vozes detectadas — use outro navegador";
+        voiceSel.appendChild(opt);
+        return;
+      }
+      voices.forEach((v, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = `${v.name} — ${v.lang}`;
+        voiceSel.appendChild(opt);
+      });
+      const idxPt = voices.findIndex(v => (v.lang || "").toLowerCase().startsWith("pt"));
+      voiceSel.value = String(idxPt >= 0 ? idxPt : 0);
+      updateVoiceHint();
+    }
+
+    function updateVoiceHint(){
+      const v = voices[parseInt(voiceSel.value, 10)];
+      hintVoice.textContent = v ? `Voz atual: ${v.name} (${v.lang})` : "Sem voz selecionada.";
+    }
+
+    if (typeof speechSynthesis !== "undefined") {
+      loadVoices();
+      if (typeof speechSynthesis.onvoiceschanged !== "undefined") {
+        speechSynthesis.onvoiceschanged = loadVoices;
+      }
+    }
+
+    function setUIState(state){
+      if (state === "idle") {
+        startBtn.disabled = false; pauseBtn.disabled = true; resumeBtn.disabled = true; stopBtn.disabled = true; skipBtn.disabled = true;
+        statusText.textContent = "Parado";
+      } else if (state === "speaking") {
+        startBtn.disabled = true; pauseBtn.disabled = false; resumeBtn.disabled = true; stopBtn.disabled = false; skipBtn.disabled = false;
+        statusText.textContent = "Falando";
+      } else if (state === "paused") {
+        startBtn.disabled = true; pauseBtn.disabled = true; resumeBtn.disabled = false; stopBtn.disabled = false; skipBtn.disabled = false;
+        statusText.textContent = "Pausado";
+      }
+    }
+    setUIState("idle");
+
+    function validarLimites(){
+      const m = parseInt(maxInput.value, 10);
+      const s = parseInt(startFromInput.value, 10);
+      if (!Number.isFinite(m) || m < 1 || m > 1000000) throw new Error("O máximo deve estar entre 1 e 1.000.000.");
+      if (!Number.isFinite(s) || s < 1 || s > m) throw new Error("O início deve estar entre 1 e o máximo definido.");
+      return { m, s };
+    }
+
+    function speakOnce(n){
+      const phrase = numeroPorExtensoPT(n);
+      const u = new SpeechSynthesisUtterance(phrase);
+      const v = voices[parseInt(voiceSel.value || "-1", 10)];
+      if (v) u.voice = v;
+      u.lang = (v && v.lang) ? v.lang : "pt-BR";
+      u.rate = parseFloat(rateInput.value) || 1.0;
+      u.onstart = () => { speaking = true; };
+      u.onend = () => {
+        speaking = false;
+        waitingNext = true;
+        const gap = Math.max(0, parseInt(gapInput.value, 10) || 0);
+        setTimeout(() => {
+          waitingNext = false;
+          if (!cancelRequested && !paused) {
+            current += 1;
+            if (current <= max) {
+              currentNum.textContent = current.toLocaleString("pt-BR");
+              speakOnce(current);
+            } else {
+              setUIState("idle");
+            }
+          }
+        }, gap);
+      };
+      u.onerror = () => {
+        speaking = false;
+        current += 1;
+        if (current <= max && !cancelRequested && !paused) speakOnce(current);
+        else setUIState("idle");
+      };
+      synth.speak(u);
+    }
+
+    startBtn.addEventListener("click", () => {
+      try {
+        const { m, s } = validarLimites();
+        max = m; current = s;
+        cancelRequested = false; paused = false;
+        currentNum.textContent = current.toLocaleString("pt-BR");
+        setUIState("speaking");
+        if (synth.speaking || synth.pending) synth.cancel();
+        speakOnce(current);
+      } catch (err) { alert(err.message || String(err)); }
+    });
+
+    pauseBtn.addEventListener("click", () => {
+      if (synth.speaking) { paused = true; synth.pause(); setUIState("paused"); }
+    });
+
+    resumeBtn.addEventListener("click", () => {
+      if (paused) { paused = false; synth.resume(); setUIState("speaking"); }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      cancelRequested = true; paused = false; synth.cancel(); setUIState("idle");
+    });
+
+    skipBtn.addEventListener("click", () => {
+      if (current < max) {
+        cancelRequested = false; paused = false;
+        if (synth.speaking || synth.pending) synth.cancel();
+        current += 1; currentNum.textContent = current.toLocaleString("pt-BR");
+        setUIState("speaking"); speakOnce(current);
+      }
+    });
+
+    voiceSel.addEventListener("change", updateVoiceHint);
+  </script>
+</body>
+</html>
